@@ -7,7 +7,6 @@
 https://www.youtube.com/watch?v=IhJCpya_FW8
 '''
 
-
 import pygame
 import math
 from settings import *
@@ -16,49 +15,58 @@ pygame.init()
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("GTA original")
-
-
+black = (0, 0, 0)
 background = pygame.image.load("BACKGROUND.jpg").convert()
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.pos = pygame.math.Vector2(PLAYER_START_X, PLAYER_START_Y)
-        self.image = pygame.image.load("cars/car(1).png")
-        self.size = self.image.get_rect().size
-        self.image = pygame.transform.scale(self.image, (int(self.size[1] * PLAYER_SIZE), int(self.size[1])))
-        self.rect = self.image.get_rect()
-        self.next_y = self.rect.y
-        self.next_x = self.rect.x
+        self.original_image = pygame.image.load("cars/car(1).png")
+        self.size = self.original_image.get_rect().size
+        self.original_image = pygame.transform.scale(self.original_image, (int(self.size[1] * PLAYER_SIZE), int(self.size[1])))
+        self.image = self.original_image
+        self.rect = self.image.get_rect(center=(self.pos.x, self.pos.y))
+        self.angle = 0
         self.speed = PLAYER_SPEED
-
-
-    def user_input(self):
         self.velocity_x = 0
         self.velocity_y = 0
 
+    def user_input(self):
         keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_w]:
-            self.velocity_y = -self.speed
-        if keys[pygame.K_a]:
-            self.velocity_x = -self.speed
+        # Rotation
         if keys[pygame.K_d]:
-            self.velocity_x = self.speed
-        if keys[pygame.K_s]:
-            self.velocity_y = self.speed
+            self.angle -= PLAYER_ROTATION_SPEED
+        if keys[pygame.K_a]:
+            self.angle += PLAYER_ROTATION_SPEED
 
-        if self.velocity_x != 0 and self.velocity_y != 0:  # moving diaglonlly
-            self.velocity_x /= math.sqrt(2)
-            self.velocity_y /= math.sqrt(2)
+        # Movement
+        self.velocity_x = 0
+        self.velocity_y = 0
+        if keys[pygame.K_w]:
+            self.velocity_x = math.cos(math.radians(self.angle)) * self.speed
+            self.velocity_y = -math.sin(math.radians(self.angle)) * self.speed
+        if keys[pygame.K_s]:
+            self.velocity_x = -math.cos(math.radians(self.angle)) * self.speed
+            self.velocity_y = math.sin(math.radians(self.angle)) * self.speed
 
     def update(self):
         self.user_input()
 
-class Camera (pygame.sprite.Group):
+        # Rotate the image
+        self.image = pygame.transform.rotate(self.original_image, self.angle)
+        self.rect = self.image.get_rect(center=self.rect.center)
+
+        # Update position based on velocity
+        self.rect.x += self.velocity_x
+        self.rect.y += self.velocity_y
+
+class Camera(pygame.sprite.Group):
     def __init__(self):
         super().__init__()
         self.offset = pygame.math.Vector2()
-        self.floor_rect = background.get_rect(topleft = (0, 0))
+        self.floor_rect = background.get_rect(topleft=(0, 0))
 
     def custom_draw(self):
         self.offset.x = player.rect.centerx - WIDTH // 2
@@ -67,19 +75,19 @@ class Camera (pygame.sprite.Group):
         floor_offset_pos = self.floor_rect.topleft - self.offset
         screen.blit(background, floor_offset_pos)
 
-
 player = Player()
 player_group = pygame.sprite.Group()
 player_group.add(player)
 
 while True:
-    keys = pygame.key.get_pressed()
+    screen.fill(black)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
 
-
     player_group.update()
+
     screen.blit(background, (0, 0))
+    player_group.draw(screen)
     pygame.display.update()
