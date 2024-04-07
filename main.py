@@ -41,21 +41,24 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_a]:
             self.angle += PLAYER_ROTATION_SPEED
 
+        # Calculate direction vector
+        direction = pygame.math.Vector2(0, -1).rotate(-self.angle)
+
         # Movement
         self.velocity_x = 0
         self.velocity_y = 0
         if keys[pygame.K_w]:
-            self.velocity_x = math.cos(math.radians(self.angle)) * self.speed
-            self.velocity_y = -math.sin(math.radians(self.angle)) * self.speed
+            self.velocity_x = direction.x * self.speed
+            self.velocity_y = direction.y * self.speed
         if keys[pygame.K_s]:
-            self.velocity_x = -math.cos(math.radians(self.angle)) * self.speed
-            self.velocity_y = math.sin(math.radians(self.angle)) * self.speed
+            self.velocity_x = -direction.x * self.speed
+            self.velocity_y = -direction.y * self.speed
 
     def update(self):
         self.user_input()
 
         # Rotate the image
-        self.image = pygame.transform.rotate(self.original_image, self.angle)
+        self.image = pygame.transform.rotate(self.original_image, self.angle-PLAYER_ROT)
         self.rect = self.image.get_rect(center=self.rect.center)
 
         # Update position based on velocity
